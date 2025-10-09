@@ -1,5 +1,50 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>MyPersonalBuyer</title>
-<h1>WebApp подключен ✅</h1>
-<p>Это уже страница, которую Telegram открывает из твоего кода.</p>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MyPersonalBuyer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
+      button { padding: 12px 16px; border: 0; border-radius: 10px; cursor: pointer; }
+      .row { display:flex; gap:8px; margin-top:12px; }
+      .log { margin-top:12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space:pre-wrap }
+    </style>
+  </head>
+  <body>
+    <h2>MyPersonalBuyer</h2>
+    <p>Телеграм-веб-апп запущен ✅</p>
+
+    <div class="row">
+      <button id="pingBtn">Проверить /api/ping</button>
+      <button id="closeBtn">Закрыть WebApp</button>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+      const log = (m) => document.getElementById('log').textContent = String(m);
+
+      // Инициализация WebApp API
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+      }
+
+      document.getElementById('pingBtn').onclick = async () => {
+        try {
+          const r = await fetch('/api/ping');
+          const j = await r.json();
+          log(JSON.stringify(j, null, 2));
+        } catch (e) {
+          log(e);
+        }
+      };
+
+      document.getElementById('closeBtn').onclick = () => {
+        if (Telegram?.WebApp?.close) Telegram.WebApp.close();
+      };
+    </script>
+  </body>
+</html>
