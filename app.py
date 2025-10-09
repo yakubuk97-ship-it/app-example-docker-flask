@@ -20,5 +20,5 @@ def static_proxy(path):
     return render_template("index.html")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))   # timeweb пример слушает 8000
+    port = int(os.getenv("PORT", "3478"))   # timeweb пример слушает 3478
     app.run(host="0.0.0.0", port=port)
