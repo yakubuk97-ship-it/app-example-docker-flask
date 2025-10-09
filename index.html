@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Hello from Flask + Docker + Timeweb 🚀</title>
-</head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 100px;">
-    <h1>🔥 УРА! Flask реально работает!</h1>
-    <p>Это страница загружена через Docker + Timeweb Cloud.</p>
-    <p>Если ты это видишь — ты красавчик 💪</p>
-</body>
-</html>
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyPersonalBuyer</title>
+<h1>MyPersonalBuyer OK ✅</h1>
+<p>Если вы это видите — деплой работает.</p>
+<button onclick="fetch('/api/ping').then(r=>r.json()).then(d=>alert(JSON.stringify(d)))">
+  Проверить /api/ping
+</button>
