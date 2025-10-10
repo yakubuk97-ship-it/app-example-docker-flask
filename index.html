@@ -1,85 +1,76 @@
 <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MyPersonalBuyer</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root { --bg:#fff; --fg:#000; --muted:#666; --btn:#f0f0f0; --btnh:#e4e4e4; }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg); color: var(--fg);
-      margin: 0; padding: 24px;
-    }
-    h1 { margin: 0 0 8px; font-size: 24px; }
-    p  { margin: 0 0 16px; color: var(--muted); }
-    .row { display:flex; gap:12px; flex-wrap: wrap; margin: 16px 0; }
-    button {
-      background: var(--btn); border: 0; border-radius: 12px;
-      padding: 12px 16px; cursor: pointer; font-size: 16px;
-    }
-    button:hover { background: var(--btnh); }
-    .card {
-      margin-top: 16px; padding: 16px; border-radius: 12px; background: #fafafa;
-      white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
-    .hidden { display:none; }
-  </style>
-</head>
-<body>
-  <h1>MyPersonalBuyer</h1>
-  <p id="status">Главная страница загружена ✅</p>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MyPersonalBuyer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
+      button { padding: 10px 14px; border: 0; border-radius: 10px; cursor: pointer; }
+      .row { display:flex; gap:10px; margin-top:14px; flex-wrap: wrap; }
+      #hello { margin: 10px 0 4px; font-weight: 600; }
+      .muted { color:#6b7280; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <h2>MyPersonalBuyer</h2>
+    <div id="hello" class="muted">Загрузка профиля…</div>
 
-  <div class="row">
-    <button id="authBtn">Авторизоваться</button>
-    <button id="profileBtn">Мой профиль</button>
-    <button id="ordersBtn">Мои заказы</button>
-    <button id="makeBtn">Оформить заказ</button>
-  </div>
+    <div class="row">
+      <button id="pingBtn">Проверить /api/ping</button>
+      <button id="closeBtn">Закрыть WebApp</button>
+    </div>
 
-  <div class="row">
-    <button id="pingBtn">Проверить /api/ping</button>
-    <button id="closeBtn">Закрыть WebApp</button>
-  </div>
+    <pre id="log" class="muted"></pre>
 
-  <div id="log" class="card hidden"></div>
+    <script>
+      const tg = window.Telegram?.WebApp;
+      const log = (m) => document.getElementById('log').textContent = String(m ?? '');
 
-  <script>
-    const tg = Telegram.WebApp;
-    tg.ready(); tg.expand();
+      function setHello(text) {
+        document.getElementById('hello').textContent = text;
+        document.getElementById('hello').classList.remove('muted');
+      }
 
-    const log = (v) => {
-      const el = document.getElementById('log');
-      el.textContent = (typeof v === 'string') ? v : JSON.stringify(v, null, 2);
-      el.classList.remove('hidden');
-    };
+      // Инициализация Telegram WebApp
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
 
-    // --------- авторизация по initData ----------
-    document.getElementById('authBtn').onclick = async () => {
-      try {
-        const r = await fetch('/api/auth', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ initData: tg.initData }) // то, что прислал Telegram
-        });
+      // Авторизация по initData
+      (async () => {
+        try {
+          const init_data = tg?.initData || '';
+          const r = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data })
+          });
+          const j = await r.json();
+          if (j.ok) {
+            const u = j.user || {};
+            setHello(`Привет, ${u.first_name || u.username || 'друг'} 👋`);
+          } else {
+            setHello('Не удалось авторизоваться 😕');
+            log(JSON.stringify(j, null, 2));
+          }
+        } catch (e) {
+          setHello('Ошибка авторизации 😕');
+          log(e);
+        }
+      })();
+
+      document.getElementById('pingBtn').onclick = async () => {
+        const r = await fetch('/api/ping');
         const j = await r.json();
-        log(j);
-      } catch (e) { log(String(e)); }
-    };
+        log(JSON.stringify(j, null, 2));
+      };
 
-    // демонстрационные кнопки
-    document.getElementById('profileBtn').onclick = () => log('🔹 "Мой профиль" — скоро добавим реальный вывод');
-    document.getElementById('ordersBtn').onclick  = () => log('📦 "Мои заказы" — пока пусто');
-    document.getElementById('makeBtn').onclick    = () => log('🛍 "Оформить заказ" — форма появится позже');
-
-    // /api/ping как раньше
-    document.getElementById('pingBtn').onclick = async () => {
-      const r = await fetch('/api/ping'); const j = await r.json(); log(j);
-    };
-
-    // закрыть мини-апп
-    document.getElementById('closeBtn').onclick = () => tg.close();
-  </script>
-</body>
+      document.getElementById('closeBtn').onclick = () => {
+        if (tg?.close) tg.close();
+      };
+    </script>
+  </body>
 </html>
