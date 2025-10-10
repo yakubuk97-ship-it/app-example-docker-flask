@@ -11,14 +11,19 @@
       .row { display:flex; gap:10px; margin-top:14px; flex-wrap: wrap; }
       #hello { margin: 10px 0 4px; font-weight: 600; }
       .muted { color:#6b7280; font-size: 14px; }
+      .ok { color:#16a34a; }
+      .err { color:#dc2626; }
+      pre { white-space: pre-wrap; word-break: break-word; }
     </style>
   </head>
   <body>
     <h2>MyPersonalBuyer</h2>
     <div id="hello" class="muted">Загрузка профиля…</div>
+    <div id="initlen" class="muted"></div>
 
     <div class="row">
       <button id="pingBtn">Проверить /api/ping</button>
+      <button id="orderBtn">Создать пробный заказ</button>
       <button id="closeBtn">Закрыть WebApp</button>
     </div>
 
@@ -26,51 +31,83 @@
 
     <script>
       const tg = window.Telegram?.WebApp;
-      const log = (m) => document.getElementById('log').textContent = String(m ?? '');
-
-      function setHello(text) {
-        document.getElementById('hello').textContent = text;
-        document.getElementById('hello').classList.remove('muted');
-      }
+      const $ = (id) => document.getElementById(id);
+      const log = (m) => $('log').textContent = typeof m === 'string' ? m : JSON.stringify(m, null, 2);
+      const setHello = (text, cls='') => { const el=$('hello'); el.textContent=text; el.className = cls || ''; };
 
       // Инициализация Telegram WebApp
       if (tg) {
         tg.ready();
         tg.expand();
+        // Кнопка «Главная» внизу
+        tg.MainButton.setText('Главная');
+        tg.MainButton.onClick(() => {
+          // тут поведение «Главная»: сейчас просто закрываем мини-апп
+          tg.close();
+        });
+        tg.MainButton.show();
       }
 
       // Авторизация по initData
       (async () => {
         try {
           const init_data = tg?.initData || '';
+          $('initlen').textContent = `initData length: ${init_data.length}`;
+          if (!init_data) {
+            setHello('Открой мини-апп из Telegram-бота, иначе initData пустой.', 'err');
+            return;
+          }
+
           const r = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ init_data })
           });
           const j = await r.json();
+
           if (j.ok) {
             const u = j.user || {};
-            setHello(`Привет, ${u.first_name || u.username || 'друг'} 👋`);
+            setHello(`Привет, ${u.first_name || u.username || 'друг'} 👋`, 'ok');
+            log('Авторизация успешна');
           } else {
-            setHello('Не удалось авторизоваться 😕');
-            log(JSON.stringify(j, null, 2));
+            setHello('Не удалось авторизоваться 😕', 'err');
+            log(j);
           }
         } catch (e) {
-          setHello('Ошибка авторизации 😕');
-          log(e);
+          setHello('Ошибка авторизации 😕', 'err');
+          log(String(e));
         }
       })();
 
-      document.getElementById('pingBtn').onclick = async () => {
-        const r = await fetch('/api/ping');
-        const j = await r.json();
-        log(JSON.stringify(j, null, 2));
+      // /api/ping
+      $('pingBtn').onclick = async () => {
+        try {
+          const r = await fetch('/api/ping');
+          const j = await r.json();
+          log(j);
+        } catch (e) {
+          log(String(e));
+        }
       };
 
-      document.getElementById('closeBtn').onclick = () => {
-        if (tg?.close) tg.close();
+      // Пример пробного заказа на /api/order
+      $('orderBtn').onclick = async () => {
+        try {
+          // Любой тестовый payload — на бэке свяжем его с авторизованным user
+          const payload = { items: [{ sku: 'DEMO-1', qty: 1 }], note: 'Тестовый заказ' };
+          const r = await fetch('/api/order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const j = await r.json();
+          log(j);
+        } catch (e) {
+          log(String(e));
+        }
       };
+
+      $('closeBtn').onclick = () => tg?.close && tg.close();
     </script>
   </body>
 </html>
