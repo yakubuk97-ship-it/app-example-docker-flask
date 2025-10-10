@@ -1,66 +1,139 @@
-from flask import Flask, request, jsonify, render_template
-import os, hmac, hashlib, json
-from urllib.parse import parse_qsl
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MyPersonalBuyer</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      --fg:#111; --muted:#6b7280; --bg:#fff; --card:#f7f7f8; --accent:#2a85ff;
+      --btn:#e5e7eb; --btn-fg:#111; --ok:#16a34a; --warn:#f59e0b; --err:#ef4444;
+    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:16px;color:var(--fg);background:var(--bg)}
+    h2{margin:0 0 8px}
+    .status{margin:4px 0 16px;font-size:14px}
+    .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.err{color:var(--err)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .tile{background:var(--card);border-radius:14px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:600;min-height:72px;text-align:center}
+    .row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+    button{padding:10px 14px;border:0;border-radius:10px;background:var(--btn);color:var(--btn-fg);cursor:pointer}
+    pre{white-space:pre-wrap;background:var(--card);padding:8px;border-radius:10px}
+    .badge{background:var(--accent);color:#fff;border-radius:20px;font-size:12px;padding:2px 8px;margin-left:6px}
+    /* калькулятор */
+    .sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end}
+    .sheet.open{display:flex}
+    .sheet-card{background:#fff; width:100%; border-top-left-radius:16px;border-top-right-radius:16px; padding:14px 16px}
+    .sheet-row{display:flex;gap:8px;margin:8px 0}
+    .sheet input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb}
+    .sheet .out{margin-top:8px;font-weight:600}
+  </style>
+</head>
+<body>
+  <h2>MyPersonalBuyer</h2>
+  <div id="authMsg" class="status">Авторизация…</div>
 
-app = Flask(__name__, template_folder=".", static_folder=".")
+  <div class="grid">
+    <div class="tile" id="nav-home">Главная</div>
+    <div class="tile" id="nav-shops">Интернет-магазины</div>
+    <div class="tile" id="nav-fav">Избранное <span id="favCount" class="badge" style="display:none">0</span></div>
+    <div class="tile" id="nav-cart">Корзина <span id="cartCount" class="badge" style="display:none">0</span></div>
+    <div class="tile" id="nav-calc">Калькулятор</div>
+    <div class="tile" id="nav-account">Аккаунт</div>
+  </div>
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+  <div class="row">
+    <button id="pingBtn">Проверить /api/ping</button>
+    <button id="closeBtn">Закрыть WebApp</button>
+  </div>
 
-@app.route("/api/ping")
-def ping():
-    return jsonify(ok=True, msg="pong")
+  <pre id="log"></pre>
 
-def verify_init_data(init_data: str, bot_token: str):
-    if not init_data or not bot_token:
-        return False, "empty init_data or bot_token", None
-    parsed = dict(parse_qsl(init_data, keep_blank_values=True))
-    hash_value = parsed.pop("hash", None)
-    if not hash_value:
-        return False, "missing hash", None
-    check_str = "\n".join(f"{k}={parsed[k]}" for k in sorted(parsed.keys()))
-    secret_key = hashlib.sha256(bot_token.encode()).digest()
-    calc_hash = hmac.new(secret_key, check_str.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calc_hash.lower(), hash_value.lower()):
-        return False, "bad signature", None
-    user_json = parsed.get("user")
-    user = json.loads(user_json) if user_json else None
-    return True, "ok", user
+  <!-- Нижняя шторка: Калькулятор -->
+  <div id="calcSheet" class="sheet">
+    <div class="sheet-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>Калькулятор</b>
+        <button id="calcClose">Закрыть</button>
+      </div>
+      <div class="sheet-row">
+        <input id="price" type="number" placeholder="Цена"/>
+        <input id="qty" type="number" placeholder="Кол-во" value="1"/>
+      </div>
+      <div class="sheet-row">
+        <input id="fee" type="number" placeholder="Комиссия, % (напр. 5)"/>
+      </div>
+      <div class="out" id="calcOut">Итог: —</div>
+    </div>
+  </div>
 
-@app.route("/api/auth", methods=["POST"])
-def auth():
-    data = request.get_json(silent=True) or {}
-    init_data = data.get("init_data", "")
-    bot_token = os.getenv("BOT_TOKEN", "")
-    ok, reason, user = verify_init_data(init_data, bot_token)
-    if not ok:
-        # Больше НЕ блокируем фронт — просто сообщаем
-        return jsonify(ok=False, error=reason, user=None), 200
-    return jsonify(ok=True, user=user)
+<script>
+const tg = window.Telegram?.WebApp;
+const $ = id => document.getElementById(id);
+const log = m => $("log").textContent = typeof m === "string" ? m : JSON.stringify(m, null, 2);
 
-# ===== Заглушки под будущую логику =====
+if (tg){ tg.ready(); tg.expand(); }
 
-@app.route("/api/user")
-def api_user():
-    return jsonify(ok=True, user={"id": 1, "name": "Guest"})
+// ---- Авторизация (но UI не блокируем) ----
+(async () => {
+  try {
+    const init_data = tg?.initData || "";           // строка initData
+    const r = await fetch("/api/auth", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ init_data })
+    });
+    const j = await r.json();
+    if (j.ok){
+      const u = j.user || {};
+      $("authMsg").textContent = `Привет, ${u.first_name || u.username || "друг"} 👋`;
+      $("authMsg").className = "status ok";
+    } else {
+      $("authMsg").textContent = `Не удалось авторизоваться (${j.error || "unknown"}) — интерфейс доступен`;
+      $("authMsg").className = "status warn";
+      log(j);
+    }
+  } catch(e){
+    $("authMsg").textContent = "Ошибка авторизации — интерфейс доступен";
+    $("authMsg").className = "status warn";
+    log(String(e));
+  }
+})();
 
-@app.route("/api/favorites", methods=["GET", "POST", "DELETE"])
-def api_favs():
-    return jsonify(ok=True, items=[])
+// ---- Навигация (пока оповещения/лог) ----
+$("nav-home").onclick = () => log("Открыта: Главная");
+$("nav-shops").onclick = async () => {
+  const r = await fetch("/api/shops"); log(await r.json());
+};
+$("nav-fav").onclick = async () => {
+  const r = await fetch("/api/favorites"); log(await r.json());
+};
+$("nav-cart").onclick = async () => {
+  const r = await fetch("/api/cart"); log(await r.json());
+};
+$("nav-account").onclick = async () => {
+  const r = await fetch("/api/user"); log(await r.json());
+};
 
-@app.route("/api/cart", methods=["GET", "POST", "DELETE"])
-def api_cart():
-    return jsonify(ok=True, items=[], total=0)
+// ---- Калькулятор (простая шторка) ----
+const sheet = $("calcSheet");
+$("nav-calc").onclick = () => sheet.classList.add("open");
+$("calcClose").onclick = () => sheet.classList.remove("open");
+const recalc = () => {
+  const p = parseFloat($("price").value || "0");
+  const q = parseInt($("qty").value || "1", 10);
+  const f = parseFloat($("fee").value || "0");
+  const subtotal = p * q;
+  const total = subtotal * (1 + f/100);
+  $("calcOut").textContent = "Итог: " + (isFinite(total) ? total.toFixed(2) : "—");
+};
+["price","qty","fee"].forEach(id => $(id).addEventListener("input", recalc));
 
-@app.route("/api/shops")
-def api_shops():
-    return jsonify(ok=True, shops=[
-        {"id": 1, "name": "Ozon"},
-        {"id": 2, "name": "Wildberries"},
-        {"id": 3, "name": "Yandex Market"},
-    ])
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8080"))
-    app.run(host="0.0.0.0", port=port)
+// ---- Кнопки сверху ----
+$("pingBtn").onclick = async () => {
+  const r = await fetch("/api/ping"); log(await r.json());
+};
+$("closeBtn").onclick = () => { if (tg?.close) tg.close(); };
+</script>
+</body>
+</html>
