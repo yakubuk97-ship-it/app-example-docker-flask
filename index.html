@@ -1,293 +1,61 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MyPersonalBuyer</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root{
-      --bg:#ffffff;--text:#111827;--muted:#6b7280;--card:#f3f4f6;--primary:#2563eb;--primary-weak:#e5edff;--danger:#ef4444;--ok:#10b981;--divider:#e5e7eb;
-    }
-    html,body{height:100%}
-    body{
-      margin:0;padding:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;
-      background:var(--bg);color:var(--text);
-    }
-    .wrap{display:flex;flex-direction:column;min-height:100vh}
-    header{
-      padding:16px 18px 4px;font-weight:800;font-size:22px;
-    }
-    .subtitle{color:#b45309;background:#fff7ed;border:1px dashed #fdba74;border-radius:10px;padding:10px 12px;margin:6px 18px 8px}
-    .content{flex:1;padding:12px 16px 100px}
-    .grid{
-      display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:8px 0 18px;
-    }
-    .tile{
-      background:var(--card);border-radius:18px;padding:24px 16px;font-weight:700;font-size:20px;
-      display:flex;align-items:center;justify-content:center;text-align:center;min-height:120px;
-    }
-    .tile:active{transform:translateY(1px);opacity:.9}
-
-    /* account */
-    .tabs{display:flex;gap:10px;margin:4px 0 14px}
-    .tab{
-      flex:1;background:var(--card);padding:12px;border-radius:12px;text-align:center;font-weight:700;color:var(--muted);
-      border:1px solid var(--card);
-    }
-    .tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e40af}
-    .card{
-      background:var(--card);border-radius:16px;padding:14px;border:1px solid var(--divider);
-    }
-    .row{display:flex;gap:12px;align-items:center}
-    .avatar{
-      width:56px;height:56px;border-radius:50%;background:#ddd;flex:0 0 56px;object-fit:cover
-    }
-    .muted{color:var(--muted)}
-    .right-link{margin-left:auto;color:#ef4444;font-weight:700}
-
-    /* actions */
-    .actions{display:flex;gap:12px;margin:14px 0}
-    .btn{
-      border:0;padding:12px 16px;border-radius:12px;font-weight:700;background:var(--card);
-    }
-    .btn.primary{background:var(--primary);color:#fff}
-    .pre{background:#0b1220;color:#d1e7ff;border-radius:12px;padding:10px;overflow:auto;font-family:ui-monospace,Menlo,monospace}
-
-    /* bottom nav */
-    .nav{
-      position:fixed;left:0;right:0;bottom:0;backdrop-filter:saturate(1.2) blur(4px);
-      background:rgba(255,255,255,.94);border-top:1px solid var(--divider);
-      display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:10px 8px 14px;z-index:99;
-    }
-    .nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:12px}
-    .nav-btn.active{color:var(--primary)}
-    .nav-ico{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:transparent}
-    .nav-btn.active .nav-ico{background:var(--primary-weak)}
-    .ico{font-size:16px}
-
-    @media (prefers-color-scheme:dark){
-      :root{--bg:#0b0f14;--text:#e5e7eb;--muted:#9ca3af;--card:#0f1620;--primary:#60a5fa;--primary-weak:#11233f;--divider:#17212b}
-      .pre{background:#0b1220;color:#cde4ff}
-      .subtitle{background:#1f2937;color:#fbbf24;border-color:#f59e0b}
-    }
-  </style>
-</head>
-<body>
-<div class="wrap">
-  <header>MyPersonalBuyer</header>
-
-  <div id="authMessage" class="subtitle" style="display:none"></div>
-
-  <main id="screen-home" class="content">
-    <div class="grid">
-      <div class="tile" data-route="home">Главная</div>
-      <div class="tile" data-route="shop">Интернет-магазины</div>
-      <div class="tile" data-route="fav">Избранное</div>
-      <div class="tile" data-route="cart">Корзина</div>
-      <div class="tile" data-route="calc">Калькулятор</div>
-      <div class="tile" data-route="acc">Аккаунт</div>
-    </div>
-
-    <div class="actions">
-      <button class="btn" id="pingBtn">Проверить /api/ping</button>
-      <button class="btn" id="closeBtn">Закрыть WebApp</button>
-    </div>
-    <pre id="log" class="pre" style="display:none"></pre>
-  </main>
-
-  <!-- Магазин -->
-  <main id="screen-shop" class="content" style="display:none">
-    <div class="tabs">
-      <div class="tab active">Витрина</div>
-      <div class="tab">Категории</div>
-      <div class="tab">Поиск</div>
-    </div>
-    <div class="card muted">Здесь будет список магазинов/товаров. (заглушка)</div>
-  </main>
-
-  <!-- Избранное -->
-  <main id="screen-fav" class="content" style="display:none">
-    <div class="card muted">Избранное пока пусто.</div>
-  </main>
-
-  <!-- Корзина -->
-  <main id="screen-cart" class="content" style="display:none">
-    <div class="card muted">Корзина пуста. Добавьте товары из Магазина.</div>
-  </main>
-
-  <!-- Калькулятор -->
-  <main id="screen-calc" class="content" style="display:none">
-    <div class="card">
-      <div style="font-weight:700;margin-bottom:8px">Калькулятор</div>
-      <div class="muted" style="margin-bottom:10px">Функция-пример — рассчёт итоговой цены с комиссией.</div>
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
-        <input id="price" type="number" placeholder="Цена" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--divider);background:var(--bg);color:var(--text)">
-        <input id="fee" type="number" placeholder="Комиссия, %" value="5" style="width:120px;padding:10px;border-radius:10px;border:1px solid var(--divider);background:var(--bg);color:var(--text)">
-        <button class="btn primary" id="calcBtn">=</button>
-      </div>
-      <div id="calcOut" class="muted"></div>
-    </div>
-  </main>
-
-  <!-- Аккаунт -->
-  <main id="screen-acc" class="content" style="display:none">
-    <div class="tabs" id="accTabs">
-      <div class="tab active" data-acc="profile">Личные данные</div>
-      <div class="tab" data-acc="addresses">Адреса</div>
-      <div class="tab" data-acc="orders">Заказы</div>
-    </div>
-
-    <!-- личные данные -->
-    <section id="accProfile">
-      <div class="card">
-        <div class="row">
-          <img id="accAvatar" class="avatar" src="" alt="">
-          <div>
-            <div id="accName" style="font-weight:800">Имя Фамилия</div>
-            <div id="accUsername" class="muted">@username</div>
-          </div>
-          <a href="#" class="right-link" id="accEdit">Редактировать</a>
-        </div>
-        <div style="height:10px"></div>
-        <div class="muted">ID пользователя</div>
-        <div id="accId" style="font-weight:700">—</div>
-      </div>
-    </section>
-
-    <!-- адреса -->
-    <section id="accAddresses" style="display:none">
-      <div class="card muted">Адреса доставки пока не добавлены.</div>
-    </section>
-
-    <!-- заказы -->
-    <section id="accOrders" style="display:none">
-      <div class="card muted">У вас пока нет заказов.</div>
-    </section>
-  </main>
-
-  <!-- нижнее меню -->
-  <nav class="nav" id="nav">
-    <div class="nav-btn active" data-route="home">
-      <div class="nav-ico"><span class="ico">🏠</span></div>
-      <div>Главная</div>
-    </div>
-    <div class="nav-btn" data-route="shop">
-      <div class="nav-ico"><span class="ico">🛍️</span></div>
-      <div>Магазин</div>
-    </div>
-    <div class="nav-btn" data-route="fav">
-      <div class="nav-ico"><span class="ico">❤️</span></div>
-      <div>Избранное</div>
-    </div>
-    <div class="nav-btn" data-route="cart">
-      <div class="nav-ico"><span class="ico">🧺</span></div>
-      <div>Корзина</div>
-    </div>
-    <div class="nav-btn" data-route="acc">
-      <div class="nav-ico"><span class="ico">👤</span></div>
-      <div>Аккаунт</div>
-    </div>
-  </nav>
+<!-- где-то рядом с твоими плитками добавь ещё одну -->
+<div class="row" style="margin-top:16px; gap:12px; flex-wrap:wrap">
+  <button id="refBtn">Зови друзей</button>
 </div>
 
 <script>
-  // Telegram setup
   const tg = window.Telegram?.WebApp;
-  if (tg){ tg.ready(); tg.expand(); }
+  const log = (m) => document.getElementById('log')?.textContent = String(m ?? '');
 
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
-
-  // simple router
-  function show(route){
-    // main screens
-    ['home','shop','fav','cart','calc','acc'].forEach(r=>{
-      $('#screen-'+r).style.display = (r===route)?'block':'none';
+  async function getRefLink() {
+    const init_data = tg?.initData || '';
+    const r = await fetch('/api/ref/link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data })
     });
-    // nav state
-    $$('#nav .nav-btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.route===route);
-    });
+    return r.json();
   }
-  // tile click
-  $$('.tile').forEach(t => t.addEventListener('click', ()=> show(t.dataset.route)));
-  // bottom nav click
-  $$('#nav .nav-btn').forEach(b => b.addEventListener('click', ()=> show(b.dataset.route)));
 
-  // account tabs
-  $$('#accTabs .tab').forEach(tab=>{
-    tab.addEventListener('click', ()=>{
-      $$('#accTabs .tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      const key = tab.dataset.acc; // profile | addresses | orders
-      $('#accProfile').style.display = key==='profile' ? 'block' : 'none';
-      $('#accAddresses').style.display = key==='addresses' ? 'block' : 'none';
-      $('#accOrders').style.display = key==='orders' ? 'block' : 'none';
-    });
-  });
+  function shareInTelegram(url, text) {
+    // Откроем системный шаринг Telegram
+    const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    if (tg?.openTelegramLink) tg.openTelegramLink(share);
+    else window.open(share, '_blank');
+  }
 
-  // calc
-  $('#calcBtn').onclick = ()=>{
-    const base = parseFloat($('#price').value||'0');
-    const fee = parseFloat($('#fee').value||'0');
-    const total = base * (1 + fee/100);
-    $('#calcOut').textContent = total ? `Итого: ${total.toFixed(2)}` : '';
-  };
+  document.getElementById('refBtn').onclick = async () => {
+    try {
+      const res = await getRefLink();
+      if (!res.ok) {
+        tg?.showAlert?.('Не удалось получить ссылку: ' + (res.error || ''));
+        return;
+      }
+      const link = res.link;
+      const text = 'Присоединяйся! Получишь приветственные бонусы 👇';
 
-  // ping & close
-  $('#pingBtn').onclick = async ()=>{
-    try{
-      const r = await fetch('/api/ping'); const j = await r.json();
-      $('#log').style.display='block';
-      $('#log').textContent = JSON.stringify(j,null,2);
-    }catch(e){
-      $('#log').style.display='block';
-      $('#log').textContent = String(e);
+      // 1) попытаемся открыть системный шаринг Телеграма
+      shareInTelegram(link, text);
+
+      // 2) параллельно положим ссылку в буфер (на всякий)
+      try {
+        await navigator.clipboard.writeText(link);
+        tg?.showPopup?.({ title: 'Ссылка скопирована', message: link, buttons: [{type:'close'}] });
+      } catch (_) {}
+    } catch (e) {
+      tg?.showAlert?.('Ошибка: ' + e.message);
     }
   };
-  $('#closeBtn').onclick = ()=> tg?.close?.();
 
-  // auth
-  (async ()=>{
-    const authMsg = $('#authMessage');
-    try{
+  // (необязательно) при старте сообщим серверу, если пришли по реф-коду
+  (async () => {
+    try {
       const init_data = tg?.initData || '';
-      const r = await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data})});
-      const j = await r.json();
-
-      let user = j?.user || null;
-      if(j?.ok){
-        // ok: hide warning
-        authMsg.style.display = 'none';
-      }else{
-        // show non-blocking warning
-        authMsg.textContent = `Не удалось авторизоваться (${j?.error || 'unknown'}) — интерфейс доступен`;
-        authMsg.style.display = 'block';
-      }
-
-      // fill account card (either from real user, or placeholders)
-      $('#accName').textContent = user?.first_name || user?.username || 'Ваше имя';
-      $('#accUsername').textContent = user?.username ? '@'+user.username : '@username';
-      $('#accId').textContent = user?.id ?? '—';
-      if(user?.photo_url){
-        $('#accAvatar').src = user.photo_url;
-      }else{
-        // fallback avatar (инициалы)
-        const initials = (user?.first_name||'A')[0];
-        const svg = `data:image/svg+xml;utf8,
-          <svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'>
-            <rect width='100%' height='100%' fill='%23e5e7eb'/>
-            <text x='50%' y='54%' font-size='56' text-anchor='middle' fill='%239aa1a9' font-family='Arial' dy='.3em'>${initials}</text>
-          </svg>`;
-        $('#accAvatar').src = svg;
-      }
-    }catch(e){
-      authMsg.textContent = 'Ошибка авторизации — интерфейс доступен';
-      authMsg.style.display = 'block';
-      console.error(e);
-    }
+      await fetch('/api/ref/register_visit', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ init_data })
+      });
+    } catch (_) {}
   })();
 </script>
-</body>
-</html>
