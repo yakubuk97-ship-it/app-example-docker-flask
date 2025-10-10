@@ -1,72 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MyPersonalBuyer</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    :root { --bg:#fff; --fg:#000; --muted:#666; --btn:#f0f0f0; --btnh:#e4e4e4; }
     body {
-      font-family: system-ui, sans-serif;
-      background-color: #ffffff;
-      color: #000;
-      text-align: center;
-      padding: 40px 20px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg); color: var(--fg);
+      margin: 0; padding: 24px;
     }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p  { margin: 0 0 16px; color: var(--muted); }
+    .row { display:flex; gap:12px; flex-wrap: wrap; margin: 16px 0; }
     button {
-      background-color: #f0f0f0;
-      border: none;
-      border-radius: 10px;
-      padding: 12px 24px;
-      margin: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.2s;
+      background: var(--btn); border: 0; border-radius: 12px;
+      padding: 12px 16px; cursor: pointer; font-size: 16px;
     }
-    button:hover {
-      background-color: #ddd;
+    button:hover { background: var(--btnh); }
+    .card {
+      margin-top: 16px; padding: 16px; border-radius: 12px; background: #fafafa;
+      white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-    .hidden {
-      display: none;
-    }
+    .hidden { display:none; }
   </style>
 </head>
 <body>
   <h1>MyPersonalBuyer</h1>
   <p id="status">Главная страница загружена ✅</p>
 
-  <div id="main-screen">
-    <button onclick="goToProfile()">Мой профиль</button>
-    <button onclick="goToOrders()">Мои заказы</button>
-    <button onclick="makeOrder()">Оформить заказ</button>
+  <div class="row">
+    <button id="authBtn">Авторизоваться</button>
+    <button id="profileBtn">Мой профиль</button>
+    <button id="ordersBtn">Мои заказы</button>
+    <button id="makeBtn">Оформить заказ</button>
   </div>
 
-  <div id="result" class="hidden"></div>
+  <div class="row">
+    <button id="pingBtn">Проверить /api/ping</button>
+    <button id="closeBtn">Закрыть WebApp</button>
+  </div>
+
+  <div id="log" class="card hidden"></div>
 
   <script>
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+    const tg = Telegram.WebApp;
+    tg.ready(); tg.expand();
 
-    function log(msg) {
-      const div = document.getElementById('result');
-      div.textContent = msg;
-      div.classList.remove('hidden');
-    }
+    const log = (v) => {
+      const el = document.getElementById('log');
+      el.textContent = (typeof v === 'string') ? v : JSON.stringify(v, null, 2);
+      el.classList.remove('hidden');
+    };
 
-    function goToProfile() {
-      log("🔹 Раздел 'Мой профиль' пока в разработке");
-    }
+    // --------- авторизация по initData ----------
+    document.getElementById('authBtn').onclick = async () => {
+      try {
+        const r = await fetch('/api/auth', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ initData: tg.initData }) // то, что прислал Telegram
+        });
+        const j = await r.json();
+        log(j);
+      } catch (e) { log(String(e)); }
+    };
 
-    function goToOrders() {
-      log("📦 Раздел 'Мои заказы' пока пуст");
-    }
+    // демонстрационные кнопки
+    document.getElementById('profileBtn').onclick = () => log('🔹 "Мой профиль" — скоро добавим реальный вывод');
+    document.getElementById('ordersBtn').onclick  = () => log('📦 "Мои заказы" — пока пусто');
+    document.getElementById('makeBtn').onclick    = () => log('🛍 "Оформить заказ" — форма появится позже');
 
-    async function makeOrder() {
-      log("🛍 Форма заказа появится здесь позже");
-    }
+    // /api/ping как раньше
+    document.getElementById('pingBtn').onclick = async () => {
+      const r = await fetch('/api/ping'); const j = await r.json(); log(j);
+    };
+
+    // закрыть мини-апп
+    document.getElementById('closeBtn').onclick = () => tg.close();
   </script>
 </body>
 </html>
