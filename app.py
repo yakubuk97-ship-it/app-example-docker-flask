@@ -1,46 +1,87 @@
-from flask import Flask, render_template, send_from_directory, jsonify, request
-import os, json, hmac, hashlib, urllib.parse
+from flask import Flask, render_template, send_from_directory, jsonify, request, session
+import os, hashlib, hmac, time, urllib.parse, json
 
-# ... твой существующий код ...
+app = Flask(__name__, template_folder=".", static_folder=".")
+app.secret_key = os.getenv("SECRET_KEY", "change-me-please")  # лучше положить в переменные окружения
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # НЕ коммить в git! добавить в переменные окружения на Timeweb
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-def verify_telegram_init_data(init_data: str) -> dict:
+@app.route("/api/ping")
+def ping():
+    return jsonify(ok=True, msg="pong")
+
+# --- Разрешаем встраивание в Telegram WebView ---
+@app.after_request
+def allow_telegram_embed(resp):
+    resp.headers['X-Frame-Options'] = 'ALLOWALL'
+    resp.headers['Content-Security-Policy'] = "frame-ancestors 'self' https://*.t.me https://*.telegram.org;"
+    return resp
+
+# --- SPA-режим: отдаём index.html, если файла нет ---
+@app.route("/<path:path>")
+def static_proxy(path):
+    if os.path.exists(path):
+        return send_from_directory(".", path)
+    return render_template("index.html")
+
+# ---------- Telegram initData auth ----------
+def verify_init_data(init_data: str, bot_token: str):
     """
-    Проверка подписи initData из Telegram Web App.
-    Алгоритм: HMAC-SHA256(data_check_string, secret_key=SHA256(BOT_TOKEN))
+    Проверка подписи согласно документации Telegram Mini Apps:
+    https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
     """
-    if not BOT_TOKEN:
-        raise ValueError("BOT_TOKEN is not set on server")
+    if not init_data:
+        return None
 
-    # разберём "k=v&k2=v2..."
-    pairs = {}
-    for chunk in init_data.split('&'):
-        if not chunk: 
-            continue
-        k, v = chunk.split('=', 1)
-        pairs[k] = urllib.parse.unquote(v)
+    data = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
+    if 'hash' not in data:
+        return None
 
-    tg_hash = pairs.pop('hash', None)
-    if not tg_hash:
-        raise ValueError("hash is missing")
+    received_hash = data.pop('hash')
+    # формируем data_check_string
+    data_check_string = '\n'.join(f"{k}={data[k]}" for k in sorted(data.keys()))
 
-    data_check_string = '\n'.join(f"{k}={pairs[k]}" for k in sorted(pairs.keys()))
-    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
     calc_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-    if calc_hash != tg_hash:
-        raise ValueError("bad signature")
+    if calc_hash != received_hash:
+        return None
 
-    return pairs  # здесь будут строки: user=..., auth_date=..., query_id=... и т.п.
+    # опционально ограничим «свежесть» логина (24 часа)
+    if 'auth_date' in data:
+        try:
+            if time.time() - int(data['auth_date']) > 24 * 3600:
+                return None
+        except Exception:
+            return None
 
-@app.route("/api/auth", methods=["POST"])
-def api_auth():
-    payload = request.get_json(force=True, silent=True) or {}
-    init_data = payload.get("initData", "")
+    # user — JSON-строка
     try:
-        parsed = verify_telegram_init_data(init_data)
-        user = json.loads(parsed.get("user", "{}"))  # это объект пользователя от Telegram
-        return jsonify(ok=True, user=user, auth_date=parsed.get("auth_date"))
-    except Exception as e:
-        return jsonify(ok=False, error=str(e)), 400
+        user = json.loads(data.get('user', '{}'))
+    except Exception:
+        user = {}
+
+    return user
+
+@app.post("/api/auth")
+def api_auth():
+    init_data = request.json.get('init_data') if request.is_json else request.form.get('init_data', '')
+    user = verify_init_data(init_data, os.environ['BOT_TOKEN'])
+    if not user:
+        return jsonify(ok=False, error="unauthorized"), 401
+
+    session['user'] = user   # сохраним в сессии (Flask cookie)
+    return jsonify(ok=True, user=user)
+
+@app.get("/api/user")
+def api_user():
+    user = session.get('user')
+    if not user:
+        return jsonify(ok=False), 401
+    return jsonify(ok=True, user=user)
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port)
