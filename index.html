@@ -94,6 +94,24 @@
       </button>
     </div>
   </main>
+<!-- ЭКРАН: Каталог New Balance -->
+<main id="s-nb" class="content" style="display:none">
+  <div class="card" style="margin-bottom:12px">
+    <div class="row" style="margin-bottom:10px">
+      <input id="nbSearch" type="text" placeholder="Поиск по названию (например, 574)">
+      <button id="nbSearchBtn" class="btn primary">Найти</button>
+    </div>
+  </div>
+
+  <div id="nbList" class="grid"></div>
+
+  <div class="row" style="margin-top:12px">
+    <button id="nbPrev" class="btn" style="flex:1">← Назад</button>
+    <button id="nbNext" class="btn" style="flex:1">Вперёд →</button>
+  </div>
+
+  <div id="nbInfo" class="muted" style="margin-top:8px"></div>
+</main>
 
   <!-- ЭКРАН: Оформить заказ (короткая форма-заглушка) -->
   <main id="s-order" class="content" style="display:none">
@@ -168,7 +186,19 @@
 
   function show(route){
   ['home','shop','fav','cart','calc','acc','nb'].forEach(r=>{
-    const el = document.getElementById('screen-'+r);
+function show(route){
+  ['home','shop','fav','cart','calc','acc','nb'].forEach(r=>{
+    const el = document.getElementById('s-'+r);
+    if (el) el.style.display = (r===route)?'block':'none';
+  });
+
+  $$('#nav .nav-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.route===route);
+  });
+
+  // если открыли экран NB — сразу подгружаем каталог
+  if (route === 'nb') loadNB();
+}
     if (el) el.style.display = (r===route)?'block':'none';
   });
   $$('#nav .nav-btn').forEach(b=>{
