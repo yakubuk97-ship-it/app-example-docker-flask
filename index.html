@@ -240,3 +240,87 @@
 
 <!-- внизу -->
 <div class="nav-btn" data-route="catalog"><div class="nav-ico">🛍️</div><div>Каталог</div></div>
+<script>
+  // ... у вас скрипт уже есть, добавим ещё:
+
+  // В роутере не забудьте добавить 'catalog':
+  // show(route) { ['home','order','track','calc','fav','help','catalog'].forEach(...) }
+
+  let catState = { q:'', cat:'', page:1, per:12, total:0 };
+
+  async function fetchCatalog(params={}){
+    const qs = new URLSearchParams(params).toString();
+    const r = await fetch('/api/catalog?'+qs);
+    return r.json();
+  }
+
+  function renderCatalog(data){
+    const root = document.getElementById('catList');
+    const info = document.getElementById('catInfo');
+    root.innerHTML = '';
+    data.items.forEach(p=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="row" style="gap:12px">
+          <div style="width:64px;height:64px;border-radius:12px;background:#e5e7eb;overflow:hidden;flex:0 0 64px">
+            <img src="${p.img || 'https://picsum.photos/seed/'+p.id+'/128'}" style="width:100%;height:100%;object-fit:cover">
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:800;margin-bottom:4px">${p.name}</div>
+            <div class="muted" style="margin-bottom:8px">${p.category || ''}</div>
+            <div class="row">
+              <div style="font-weight:800">${p.price.toLocaleString('ru-RU')} ₽</div>
+              <button class="btn primary" style="margin-left:auto" onclick="addToCart(${p.id})">В корзину</button>
+            </div>
+          </div>
+        </div>`;
+      root.appendChild(card);
+    });
+    info.textContent = `Показано ${data.items.length} из ${data.total} (стр. ${data.page})`;
+  }
+
+  // Заглушка добавления в корзину
+  window.addToCart = async (id)=>{
+    try{
+      await fetch('/api/cart', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, qty:1})});
+      tg?.showPopup?.({title:'Добавлено в корзину', message:'Товар добавлен', buttons:[{type:'close'}]});
+    }catch(_){}
+  };
+
+  async function loadCatalog(){
+    const j = await fetchCatalog(catState);
+    if (j.ok){
+      renderCatalog(j);
+      catState.total = j.total;
+      // категории в селект (один раз)
+      const sel = document.getElementById('catFilter');
+      if (sel.options.length === 1 && j.categories){
+        j.categories.forEach(c=>{
+          const o = document.createElement('option');
+          o.value = c; o.textContent = c; sel.appendChild(o);
+        });
+      }
+    }
+  }
+
+  // Управление
+  document.getElementById('catSearchBtn').onclick = ()=>{ 
+    catState.q = (document.getElementById('catSearch').value || '').trim(); 
+    catState.page = 1; loadCatalog();
+  };
+  document.getElementById('catFilter').onchange = (e)=>{ catState.cat = e.target.value; catState.page = 1; loadCatalog(); };
+  document.getElementById('catClear').onclick = ()=>{
+    document.getElementById('catSearch').value=''; document.getElementById('catFilter').value='';
+    catState = { q:'', cat:'', page:1, per:12, total:0 }; loadCatalog();
+  };
+  document.getElementById('catPrev').onclick = ()=>{ if (catState.page>1){ catState.page--; loadCatalog(); } };
+  document.getElementById('catNext').onclick = ()=>{
+    const maxPage = Math.ceil((catState.total || 0) / catState.per);
+    if (catState.page < maxPage){ catState.page++; loadCatalog(); }
+  };
+
+  // Когда открываем экран каталога — подгружаем
+  const origShow = show;
+  show = (route)=>{ origShow(route); if (route==='catalog') loadCatalog(); };
+</script>
