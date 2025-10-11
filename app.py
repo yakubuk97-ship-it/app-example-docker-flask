@@ -91,3 +91,31 @@ def api_catalog():
     cats = sorted({p.get("category","") for p in CATALOG if p.get("category")})
 
     return jsonify(ok=True, items=chunk, total=total, page=page, per=per, categories=cats)
+    # ==== КАТАЛОГ New Balance (из JSON-файла) ====
+import json, os
+
+CAT_FILE = os.path.join(os.path.dirname(__file__), "catalog_nb_pl.json")
+
+@app.get("/api/catalog/nb")
+def api_catalog_nb():
+    if not os.path.exists(CAT_FILE):
+        # ещё не собрали каталог
+        return jsonify(ok=False, error="catalog not built", items=[]), 200
+
+    with open(CAT_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # простые фильтры/поиск/пагинация
+    q   = (request.args.get("q") or "").lower().strip()
+    page = max(1, int(request.args.get("page", 1)))
+    per  = max(1, min(24, int(request.args.get("per", 12))))
+
+    items = data
+    if q:
+        items = [p for p in items if q in p.get("name","").lower()]
+
+    total = len(items)
+    start = (page-1)*per
+    chunk = items[start:start+per]
+
+    return jsonify(ok=True, items=chunk, total=total, page=page, per=per)
