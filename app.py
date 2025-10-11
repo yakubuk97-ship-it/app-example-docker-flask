@@ -52,3 +52,42 @@ def track():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port)
+    # ==== КАТАЛОГ (простой JSON) ====
+
+import json, os
+
+def load_catalog():
+    path = os.path.join(os.path.dirname(__file__), "catalog.json")
+    if not os.path.exists(path):
+        # демо-данные на старте
+        sample = [
+            {"id": 1, "name": "Кроссовки NB 574", "price": 7990, "img": "", "category": "Обувь"},
+            {"id": 2, "name": "Куртка ветровка", "price": 5590, "img": "", "category": "Одежда"},
+            {"id": 3, "name": "Рюкзак городской", "price": 3490, "img": "", "category": "Аксессуары"},
+        ]
+        return sample
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+CATALOG = load_catalog()
+
+@app.get("/api/catalog")
+def api_catalog():
+    q   = (request.args.get("q") or "").lower().strip()
+    cat = (request.args.get("cat") or "").strip()
+    page = max(1, int(request.args.get("page", 1)))
+    per  = max(1, min(24, int(request.args.get("per", 12))))
+
+    items = CATALOG
+    if q:
+        items = [p for p in items if q in p["name"].lower()]
+    if cat:
+        items = [p for p in items if p.get("category") == cat]
+
+    total = len(items)
+    start = (page-1)*per
+    chunk = items[start:start+per]
+
+    cats = sorted({p.get("category","") for p in CATALOG if p.get("category")})
+
+    return jsonify(ok=True, items=chunk, total=total, page=page, per=per, categories=cats)
