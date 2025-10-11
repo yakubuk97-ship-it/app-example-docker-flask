@@ -324,3 +324,23 @@
   const origShow = show;
   show = (route)=>{ origShow(route); if (route==='catalog') loadCatalog(); };
 </script>
+<button class="btn-tile" data-route="nb">
+  <span class="btn-ico">🛍️</span> Каталог New Balance
+</button>
+<main id="s-nb" class="content" style="display:none">
+  <div class="card" style="margin-bottom:12px">
+    <div class="row" style="margin-bottom:10px">
+      <input id="nbSearch" type="text" placeholder="Поиск по названию (например, 574)">
+      <button id="nbSearchBtn" class="btn primary">Найти</button>
+    </div>
+  </div>
+
+  <div id="nbList" class="grid"></div>
+
+  <div class="row" style="margin-top:12px">
+    <button id="nbPrev" class="btn" style="flex:1">← Назад</button>
+    <button id="nbNext" class="btn" style="flex:1">Вперёд →</button>
+  </div>
+
+  <div id="nbInfo" class="muted" style="margin-top:8px"></div>
+</main>
