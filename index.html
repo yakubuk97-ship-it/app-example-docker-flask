@@ -164,14 +164,17 @@
   const $$ = s => Array.from(document.querySelectorAll(s));
 
   function show(route){
-    ['home','order','track','calc','fav','help'].forEach(r=>{
-      $('#s-'+r).style.display = (r===route) ? 'block' : 'none';
-    });
-    $$('#nav .nav-btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.route === route);
-    });
-  }
+  ['home','shop','fav','cart','calc','acc','nb'].forEach(r=>{
+    const el = document.getElementById('screen-'+r);
+    if (el) el.style.display = (r===route)?'block':'none';
+  });
+  $$('#nav .nav-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.route===route);
+  });
 
+  // если открыли экран NB — сразу подгружаем каталог
+  if (route === 'nb') loadNB();
+}
   // Навигация (внизу)
   $$('#nav .nav-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.route)));
   // Плитки на главной
