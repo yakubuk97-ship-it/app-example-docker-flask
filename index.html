@@ -228,7 +228,6 @@
       const r = await fetch('/api/auth', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data})});
       const j = await r.json();
       if (!j?.ok) {
-        note.textContent = 'Не удалось авторизоваться — можно пользоваться без входа.';
         note.style.display = 'block';
       }
     }catch(_){
