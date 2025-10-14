@@ -3,88 +3,88 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Заказывай любимые бренды в одном месте</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <title>Мой Персональный Байер</title>
   <style>
-    :root{
-      --bg:#ffffff; --text:#0b0f14; --muted:#58606b; --card:#f5f7fa;
-      --brand:#1565c0; --brand-weak:#e7efff; --ok:#0a7f42; --danger:#c62828; --stroke:#e2e8f0;
-      --touch:20px;      /* радиус у кнопок */
-      --fz-xl:24px;      /* заголовки покрупнее */
-      --fz-lg:18px;      /* текст на кнопках */
-      --fz-md:16px;      /* обычный текст */
+    :root {
+      --bg: #ffffff;        /* Белый фон */
+      --text: #111317;      /* Почти черный текст */
+      --muted: #6b7280;     /* Вторичный серый */
+      --card: #f7f7f9;      /* Цвет карточек */
+      --brand: #222222;     /* Акцент — черный */
+      --brand-weak: #e6e7eb;/* Слабый бордер/фон */
+      --stroke: #e6e7eb;    /* Линии */
+      --radius: 14px;
     }
- :root {
-  --bg: #ffffff;        /* Белый фон */
-  --text: #111317;      /* Почти черный текст */
-  --muted: #6b7280;     /* Вторичный серый */
-  --card: #f7f7f9;      /* Цвет карточек */
-  --brand: #222222;     /* Акцент — черный, как у Brandshop */
-  --brand-weak: #e6e7eb;/* Слабый бордер/фон */
-  --stroke: #e6e7eb;    /* Линии */
-}
 
-body {
-  background: var(--bg);
-  color: var(--text);
-}
-      }
-    }
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--text);
+    html, body {
+      height: 100%;
+      margin: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased; font-size: var(--fz-md);
+      background: var(--bg);
+      color: var(--text);
     }
-    .wrap{min-height:100vh; display:flex; flex-direction:column;}
-    header{padding:18px 18px 10px; font-size: var(--fz-xl); font-weight:800;}
-    .note{margin:0 18px 10px; background:#fff8e1; color:#8a6d1a; border:1px solid #ffecb3; border-radius:12px; padding:12px 14px; display:none}
-    .content{flex:1; padding:16px 18px 110px}
-    .grid{display:grid; grid-template-columns:1fr; gap:14px;}
-    @media(min-width:460px){ .grid{grid-template-columns:1fr 1fr;}}
 
-    .btn-tile{
-      border:2px solid var(--stroke); background:var(--card); border-radius:var(--touch);
-      padding:18px; font-size: var(--fz-lg); font-weight:700; display:flex; gap:14px; align-items:center;
+    header {
+      font-size: 24px;
+      font-weight: 800;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--stroke);
     }
-    .btn-tile:active{transform:translateY(1px); opacity:.9}
-    .btn-ico{font-size:24px; width:36px; height:36px; display:grid; place-items:center; background:var(--brand-weak); border-radius:10px}
-    .btn-brand{background:var(--brand); color:#fff; border-color:var(--brand)}
-    .card{background:var(--card); border:1px solid var(--stroke); border-radius:16px; padding:16px}
 
-    /* нижняя навигация */
-    .nav{
-      position:fixed; left:0; right:0; bottom:0; z-index:50;
-      background:rgba(255,255,255,.96); border-top:1px solid var(--stroke);
-      display:grid; grid-template-columns:repeat(5,1fr); gap:2px; padding:10px 8px 16px;
-      backdrop-filter: saturate(1.1) blur(6px);
+    .content {
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
     }
-    @media (prefers-color-scheme:dark){ .nav{background:rgba(9,12,16,.92)} }
-    .nav-btn{display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--muted); font-size:13px}
-    .nav-btn.active{color:var(--brand)}
-    .nav-ico{width:30px; height:30px; border-radius:10px; display:grid; place-items:center; background:transparent; font-size:18px}
-    .nav-btn.active .nav-ico{background:var(--brand-weak)}
 
-    /* простые элементы формы */
-    .row{display:flex; gap:10px; align-items:center}
-    input[type="number"], input[type="text"]{
-      flex:1; padding:14px; border-radius:14px; border:1px solid var(--stroke);
-      background:var(--bg); color:var(--text); font-size:var(--fz-md);
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
     }
-    .btn{border:0; padding:14px 18px; border-radius:14px; font-size:var(--fz-lg); font-weight:700}
-    .btn.primary{background:var(--brand); color:#fff}
-    .muted{color:var(--muted)}
+
+    .btn {
+      background: #f7f7f9;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+
+    .btn:hover {
+      background: #f0f0f2;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    .btn.primary:hover {
+      background: #000;
+    }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <!-- ЭКРАН: Главная -->
-  <main id="s-home" class="content">
+
+  <main class="content">
     <div class="grid">
-      <button class="btn-tile btn-brand" data-route="order">
+      <div class="btn primary">Список интернет-магазинов</div>
+      <div class="btn">Личный кабинет</div>
+      <div class="btn">Калькулятор</div>
+      <div class="btn">Заполнить заявку на поиск вещи</div>
+      <div class="btn">Связаться с поддержкой</div>
     </div>
   </main>
-<!-- ЭКРАН: Каталог New Balance -->
+</body>
+</html><!-- ЭКРАН: Каталог New Balance -->
 <main id="s-nb" class="content" style="display:none">
   <div class="card" style="margin-bottom:12px">
     <div class="row" style="margin-bottom:10px">
@@ -130,19 +130,6 @@ body {
     </div>
   </main>
 
-  <!-- ЭКРАН: Калькулятор -->
-  <main id="s-calc" class="content" style="display:none">
-    <div class="card">
-      <div style="font-weight:800; font-size:20px; margin-bottom:8px">Калькулятор стоимости</div>
-      <div class="row" style="margin-bottom:10px">
-        <input id="price" type="number" placeholder="Цена товара">
-        <input id="fee" type="number" placeholder="Комиссия, %" value="5">
-      </div>
-      <button id="calcBtn" class="btn primary" style="width:100%">Рассчитать</button>
-      <div id="calcOut" class="muted" style="margin-top:10px"></div>
-    </div>
-  </main>
-
   <!-- ЭКРАН: Избранное -->
   <main id="s-fav" class="content" style="display:none">
     <div class="card muted">В избранном пока пусто.</div>
@@ -155,17 +142,6 @@ body {
       <button id="supportBtn" class="btn primary" style="width:100%">Написать в поддержку</button>
     </div>
   </main>
-
-  <!-- низ -->
-  <nav class="nav" id="nav">
-    <div class="nav-btn active" data-route="home"><div class="nav-ico">🏠</div><div>Главная</div></div>
-    <div class="nav-btn" data-route="order"><div class="nav-ico">📝</div><div>Заказ</div></div>
-    <div class="nav-btn" data-route="track"><div class="nav-ico">📦</div><div>Отследить</div></div>
-    <div class="nav-btn" data-route="calc"><div class="nav-ico">🧮</div><div>Кальк.</div></div>
-    <div class="nav-btn" data-route="help"><div class="nav-ico">👩‍💬</div><div>Помощь</div></div>
-  </nav>
-</div>
-
 <script>
   // Telegram WebApp
   const tg = window.Telegram?.WebApp;
