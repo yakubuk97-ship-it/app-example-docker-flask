@@ -73,6 +73,57 @@
   </style>
 </head>
 <body>
+  <header>Мой Персональный Байер</header>
+
+  <main class="content">
+    <div class="grid">
+      <div class="btn primary">Список интернет-магазинов</div>
+      <div class="btn">Личный кабинет</div>
+      <div class="btn">Калькулятор</div>
+      <div class="btn">Заполнить заявку на поиск вещи</div>
+      <div class="btn">Связаться с поддержкой</div>
+    </div>
+  </main>
+</body>
+</html>      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      background: #f7f7f9;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+
+    .btn:hover {
+      background: #f0f0f2;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    .btn.primary:hover {
+      background: #000;
+    }
+  </style>
+</head>
+<body>
 
   <main class="content">
     <div class="grid">
