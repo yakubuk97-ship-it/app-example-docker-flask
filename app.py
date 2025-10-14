@@ -4,118 +4,60 @@ from urllib.parse import parse_qsl
 
 app = Flask(__name__, template_folder=".", static_folder=".")
 
+# -------------------- фронт --------------------
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html")  # ваш файл из предыдущего шага
 
-@app.get("/api/ping")
-def ping():
-    return jsonify(ok=True, msg="pong")
-
-# ——— неблокирующая проверка initData ———
+# -------------------- auth: проверка initData --------------------
 def verify_init_data(init_data: str, bot_token: str):
-    try:
-        parsed = dict(parse_qsl(init_data, keep_blank_values=True))
-        hash_value = parsed.pop("hash", None)
-        if not init_data or not bot_token or not hash_value:
-            return False
-        check_str = "\n".join(f"{k}={parsed[k]}" for k in sorted(parsed.keys()))
-        secret_key = hashlib.sha256(bot_token.encode()).digest()
-        calc_hash = hmac.new(secret_key, check_str.encode(), hashlib.sha256).hexdigest()
-        return hmac.compare_digest(calc_hash.lower(), hash_value.lower())
-    except Exception:
-        return False
+    """
+    Возвращает (ok: bool, reason: str, user: dict|None).
+    Валидируем initData по правилам Telegram Web Apps:
+    https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+    """
+    if not init_data or not bot_token:
+        return False, "empty init_data or bot_token", None
+
+    parsed = dict(parse_qsl(init_data, keep_blank_values=True))
+
+    received_hash = parsed.pop("hash", None)
+    if not received_hash:
+        return False, "missing hash", None
+
+    # data_check_string
+    check_string = "\n".join(f"{k}={parsed[k]}" for k in sorted(parsed.keys()))
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    calc_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(calc_hash, received_hash.lower()):
+        return False, "bad signature", None
+
+    # user
+    user_json = parsed.get("user")
+    user = json.loads(user_json) if user_json else None
+    return True, "ok", user
 
 @app.post("/api/auth")
-def auth():
+def api_auth():
     data = request.get_json(silent=True) or {}
-    ok = verify_init_data(data.get("init_data",""), os.getenv("BOT_TOKEN",""))
-    # не ломаем интерфейс
-    return jsonify(ok=bool(ok))
+    init_data = data.get("init_data", "")
+    bot_token = os.getenv("BOT_TOKEN", "")
 
-# ——— заглушки под действия ———
-@app.post("/api/order")
-def make_order():
-    link = (request.json or {}).get("link","")
-    if not link:
-        return jsonify(ok=False, error="empty"), 400
-    # здесь можно слать в админ-чат бота, писать в БД и т.п.
-    return jsonify(ok=True)
+    ok, reason, user = verify_init_data(init_data, bot_token)
+    if not ok:
+        # если открыть страницу вне Telegram — тут будет "bad signature"
+        return jsonify(ok=False, error=reason), 200
 
-@app.get("/api/track")
-def track():
-    _id = request.args.get("id","")
-    if not _id: return jsonify(ok=False), 400
-    # заглушка статуса
-    return jsonify(ok=True, status="В обработке")
+    return jsonify(ok=True, user=user)
+
+# (опционально) чтобы Telegram мог встраивать страницу в WebView
+@app.after_request
+def allow_telegram_embed(resp):
+    resp.headers["X-Frame-Options"] = "ALLOWALL"
+    resp.headers["Content-Security-Policy"] = "frame-ancestors 'self' https://*.t.me https://*.telegram.org;"
+    return resp
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port)
-    # ==== КАТАЛОГ (простой JSON) ====
-
-import json, os
-
-def load_catalog():
-    path = os.path.join(os.path.dirname(__file__), "catalog.json")
-    if not os.path.exists(path):
-        # демо-данные на старте
-        sample = [
-            {"id": 1, "name": "Кроссовки NB 574", "price": 7990, "img": "", "category": "Обувь"},
-            {"id": 2, "name": "Куртка ветровка", "price": 5590, "img": "", "category": "Одежда"},
-            {"id": 3, "name": "Рюкзак городской", "price": 3490, "img": "", "category": "Аксессуары"},
-        ]
-        return sample
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-CATALOG = load_catalog()
-
-@app.get("/api/catalog")
-def api_catalog():
-    q   = (request.args.get("q") or "").lower().strip()
-    cat = (request.args.get("cat") or "").strip()
-    page = max(1, int(request.args.get("page", 1)))
-    per  = max(1, min(24, int(request.args.get("per", 12))))
-
-    items = CATALOG
-    if q:
-        items = [p for p in items if q in p["name"].lower()]
-    if cat:
-        items = [p for p in items if p.get("category") == cat]
-
-    total = len(items)
-    start = (page-1)*per
-    chunk = items[start:start+per]
-
-    cats = sorted({p.get("category","") for p in CATALOG if p.get("category")})
-
-    return jsonify(ok=True, items=chunk, total=total, page=page, per=per, categories=cats)
-    # ==== КАТАЛОГ New Balance (из JSON-файла) ====
-import json, os
-
-CAT_FILE = os.path.join(os.path.dirname(__file__), "catalog_nb_pl.json")
-
-@app.get("/api/catalog/nb")
-def api_catalog_nb():
-    if not os.path.exists(CAT_FILE):
-        # ещё не собрали каталог
-        return jsonify(ok=False, error="catalog not built", items=[]), 200
-
-    with open(CAT_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # простые фильтры/поиск/пагинация
-    q   = (request.args.get("q") or "").lower().strip()
-    page = max(1, int(request.args.get("page", 1)))
-    per  = max(1, min(24, int(request.args.get("per", 12))))
-
-    items = data
-    if q:
-        items = [p for p in items if q in p.get("name","").lower()]
-
-    total = len(items)
-    start = (page-1)*per
-    chunk = items[start:start+per]
-
-    return jsonify(ok=True, items=chunk, total=total, page=page, per=per)
