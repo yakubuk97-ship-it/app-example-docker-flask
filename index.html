@@ -6,94 +6,114 @@
   <title>Профиль</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root{ --bg:#fff; --text:#111317; --line:#000; }
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .page{min-height:100dvh;display:flex;flex-direction:column}
-    .content{flex:1;max-width:560px;margin:0 auto;width:100%;padding:16px}
-    .card{border:1px solid #eee;border-radius:16px;padding:16px;display:flex;gap:12px;align-items:center}
-    .avatar{width:64px;height:64px;border-radius:50%;background:#f0f0f0;object-fit:cover}
-    .name{font-weight:800;font-size:18px}
-    .username{color:#667085;margin-top:4px}
-    nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center}
-    .nav-btn{display:flex;flex-direction:column;align-items:center;gap:6px}
-    .ico{font-size:22px;line-height:22px}
-    .label{font-size:14px}
-    .center{display:grid;place-items:center;height:100%}
-    .muted{color:#667085}
-    .btn{border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;cursor:pointer}
+    :root { --line:#000; --muted:#6b7280; }
+    html,body{margin:0;padding:0;height:100%;background:#fff;color:#111;}
+    .wrap{min-height:100vh;display:flex;flex-direction:column}
+    main{flex:1;padding:16px}
+    .card{border:1px solid #eee;border-radius:14px;padding:16px}
+    .row{display:flex;gap:12px;align-items:center}
+    .avatar{width:64px;height:64px;border-radius:50%;background:#eee;flex:0 0 64px;object-fit:cover}
+    nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--line);
+        display:flex;justify-content:center;align-items:center}
+    nav .btn{display:flex;flex-direction:column;align-items:center;color:#111;font-size:12px}
+    nav .ico{font-size:22px;line-height:22px}
+    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
-<div class="page">
-  <main class="content">
-    <div id="placeholder" class="center muted" style="height:30dvh">Нажми “Профиль” внизу</div>
+<div class="wrap">
+  <main>
+    <div id="alert" class="muted" style="margin-bottom:12px"></div>
 
-    <div id="card" class="card" style="display:none">
-      <img id="avatar" class="avatar" alt="">
-      <div>
-        <div id="name" class="name">—</div>
-        <div id="username" class="username">@</div>
+    <div class="card">
+      <div class="row">
+        <img id="avatar" class="avatar" src="" alt="">
+        <div>
+          <div id="name" style="font-weight:800;font-size:18px">—</div>
+          <div id="username" class="muted">@</div>
+        </div>
       </div>
     </div>
-
-    <div id="error" class="muted" style="margin-top:12px;display:none"></div>
   </main>
 
   <nav>
-    <button id="btnProfile" class="nav-btn btn" style="border:0;background:transparent">
+    <div id="btnProfile" class="btn">
       <div class="ico">👤</div>
-      <div class="label">Профиль</div>
-    </button>
+      <div>Профиль</div>
+    </div>
   </nav>
 </div>
 
 <script>
   const tg = window.Telegram?.WebApp;
-  tg?.ready?.(); tg?.expand?.();
+  if (tg){ tg.ready(); tg.expand(); }
 
   const $ = s => document.querySelector(s);
 
-  $('#btnProfile').onclick = async () => {
-    $('#error').style.display = 'none';
-    $('#placeholder').style.display = 'none';
+  // Нажали "Профиль" — загружаем профиль
+  $('#btnProfile').onclick = () => loadProfile();
 
+  // 1) Авторизация через initData
+  async function auth() {
     try {
       const init_data = tg?.initData || '';
-      console.log('initData:', init_data); // можно подсмотреть в консоль
-
       const r = await fetch('/api/auth', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ init_data })
       });
       const j = await r.json();
-
       if (!j.ok) {
-        $('#error').textContent = 'Не удалось авторизоваться: ' + (j.error || 'unknown');
-        $('#error').style.display = 'block';
-        return;
+        $('#alert').textContent = 'Не удалось авторизоваться: ' + (j.error || '');
+        return null;
       }
-
-      const u = j.user || {};
-      $('#name').textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'Пользователь';
-      $('#username').textContent = u.username ? '@'+u.username : '';
-      const av = $('#avatar');
-      if (u.photo_url) av.src = u.photo_url;
-      else av.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>
-           <rect width='100%' height='100%' fill='#f0f0f0'/>
-           <circle cx='64' cy='48' r='22' fill='#d9d9d9'/>
-           <rect x='28' y='78' width='72' height='26' rx='13' fill='#d9d9d9'/>
-         </svg>`
-      );
-
-      $('#card').style.display = 'flex';
+      // сохраним токен для защищённых ручек
+      localStorage.setItem('token', j.token);
+      return j.user;
     } catch (e) {
-      $('#error').textContent = 'Ошибка сети';
-      $('#error').style.display = 'block';
-      console.error(e);
+      $('#alert').textContent = 'Ошибка сети: ' + e;
+      return null;
     }
-  };
+  }
+
+  // 2) Получить /api/me через Bearer токен
+  async function me(){
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const r = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    const j = await r.json();
+    return j.ok ? j.user : null;
+  }
+
+  function fillProfile(u){
+    $('#name').textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'Пользователь';
+    $('#username').textContent = u.username ? ('@' + u.username) : '@';
+    const av = $('#avatar');
+    if (u.photo_url) av.src = u.photo_url;
+    else av.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>
+         <rect width='100%' height='100%' fill='#f0f0f0'/>
+         <circle cx='64' cy='48' r='22' fill='#d0d3d6'/>
+         <rect x='22' y='78' width='84' height='30' rx='15' fill='#d0d3d6'/>
+       </svg>`
+    );
+  }
+
+  async function loadProfile(){
+    // пробуем по токену
+    let u = await me();
+    if (!u) {
+      // если нет токена / истёк — авторизуемся снова через initData
+      u = await auth();
+    }
+    if (u) {
+      $('#alert').textContent = '';
+      fillProfile(u);
+    }
+  }
+
+  // можно сразу грузить
+  loadProfile();
 </script>
 </body>
 </html>
