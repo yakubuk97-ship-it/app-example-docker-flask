@@ -14,10 +14,20 @@
       --fz-lg:18px;      /* текст на кнопках */
       --fz-md:16px;      /* обычный текст */
     }
-    @media (prefers-color-scheme:dark){
-      :root{
-        --bg:#0b0f14; --text:#eef2f7; --muted:#9aa4b2; --card:#121922;
-        --brand:#64a9ff; --brand-weak:#0f2644; --stroke:#1f2a36;
+ :root {
+  --bg: #ffffff;        /* Белый фон */
+  --text: #111317;      /* Почти черный текст */
+  --muted: #6b7280;     /* Вторичный серый */
+  --card: #f7f7f9;      /* Цвет карточек */
+  --brand: #222222;     /* Акцент — черный, как у Brandshop */
+  --brand-weak: #e6e7eb;/* Слабый бордер/фон */
+  --stroke: #e6e7eb;    /* Линии */
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
       }
     }
     html,body{height:100%}
@@ -75,23 +85,6 @@
   <main id="s-home" class="content">
     <div class="grid">
       <button class="btn-tile btn-brand" data-route="order">
-        <span class="btn-ico">📝</span> Список интернет-магазинов
-      </button>
-      <button class="btn-tile" data-route="track">
-        <span class="btn-ico">📦</span> Личный кабинет
-      </button>
-      <button class="btn-tile" data-route="calc">
-        <span class="btn-ico">🧮</span> Калькулятор
-      </button>
-      <button class="btn-tile" data-route="fav">
-        <span class="btn-ico">⭐</span> Заполнить заявку на поиск вещи
-      </button>
-      <button class="btn-tile" data-route="help">
-        <span class="btn-ico">👩‍💬</span> Связаться с поддержкой
-      </button>
-       <button class="btn-tile" data-route="nb">
-        <span class="btn-ico">🛍️</span> Каталог New Balance
-      </button>
     </div>
   </main>
 <!-- ЭКРАН: Каталог New Balance -->
