@@ -3,38 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Мой Персональный Байер</title>
+  <title></title>
   <style>
     :root {
-      --bg: #ffffff;        /* Белый фон */
-      --text: #111317;      /* Почти черный текст */
-      --muted: #6b7280;     /* Вторичный серый */
-      --card: #f7f7f9;      /* Цвет карточек */
-      --brand: #222222;     /* Акцент — черный */
-      --brand-weak: #e6e7eb;/* Слабый бордер/фон */
-      --stroke: #e6e7eb;    /* Линии */
-      --radius: 14px;
+      --bg: #ffffff;        /* чисто белый фон */
+      --line: #000000;      /* черная линия сверху меню */
     }
 
     html, body {
-      height: 100%;
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 0;
+      height: 100%;
       background: var(--bg);
-      color: var(--text);
-    }
-
-    header {
-      font-size: 24px;
-      font-weight: 800;
-      padding: 20px;
-      text-align: center;
-      border-bottom: 1px solid var(--stroke);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
     .content {
-      padding: 20px;
-      max-width: 500px;
+      height: calc(100vh - 70px);
+    }
+
+    .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--line);
+      height: 70px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .nav-btn {
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="content"></main>
+
+  <nav class="nav">
+    <button class="nav-btn"></button>
+    <button class="nav-btn"></button>
+    <button class="nav-btn"></button>
+    <button class="nav-btn"></button>
+    <button class="nav-btn"></button>
+  </nav>
+</body>
+</html>      max-width: 500px;
       margin: 0 auto;
     }
 
