@@ -8,6 +8,7 @@
     :root {
       --bg: #ffffff;
       --line: #000000;
+      --text: #111111;
     }
 
     html, body {
@@ -15,6 +16,7 @@
       padding: 0;
       height: 100%;
       background: var(--bg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
     main {
@@ -30,26 +32,43 @@
       background: #fff;
       border-top: 1px solid var(--line);
       display: flex;
-      justify-content: space-around;
+      justify-content: center;
       align-items: center;
     }
 
     .nav-btn {
-      width: 32px;
-      height: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      font-size: 12px;
       background: transparent;
       border: none;
+      cursor: pointer;
+    }
+
+    .icon {
+      width: 28px;
+      height: 28px;
+      fill: #000;
+      stroke: #000;
+      stroke-width: 2;
+      margin-bottom: 4px;
     }
   </style>
 </head>
 <body>
   <main></main>
+
   <nav>
-    <button class="nav-btn"></button>
-    <button class="nav-btn"></button>
-    <button class="nav-btn"></button>
-    <button class="nav-btn"></button>
-    <button class="nav-btn"></button>
+    <button class="nav-btn">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8" r="4"></circle>
+        <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"></path>
+      </svg>
+      Профиль
+    </button>
   </nav>
 </body>
 </html>
