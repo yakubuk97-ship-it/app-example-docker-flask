@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ru">
 <head>
@@ -127,6 +128,7 @@
     async function loadProfile() {
       try {
         const init_data = tg?.initData || '';
+        console.log('initData:', tg?.initData);
         const res = await fetch('/api/auth', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
